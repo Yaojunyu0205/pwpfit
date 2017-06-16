@@ -1,9 +1,9 @@
 function [fitobject, x0] = pfit (x, z, n)
 %PFIT Fits multi-dimensional, polynomial function to data.
 %
-% Finds polynomial function in x1,...,xm of degrees n1,...,nm
+% Finds polynomial function in x1,...,xm of degrees n
 %
-%   f(x) = bn0 x1^n1 + ... + b0n xm^nm + ... + b10 x1 + ... + b01 xm + b0;
+%   f(x) = bn0 x1^n + ... + b0n xm^n + ... + b10 x1 + ... + b01 xm + b0;
 %
 % minimizing
 %

@@ -7,6 +7,7 @@ function [p, X, r] = monomials(n, m)
 %
 % Creates a column vector of monomials to degree n.
 %
+%
 %   [p, X, r] = monomials(n, m)
 %
 % Creates a column vector of monomials in m variables to degree n. 
