@@ -42,8 +42,8 @@ function [fitobject, x0] = pwpfit (xa, xb, z, n, x0)
 %
 %%
 
-assure(size(xa, 2) == size(xb, 2), 'xa and xb must have same number of columns.');
-assure(all(size([xa; xb]) == size(z)), '[xa; xb] and y must equal in size.');
+assert(size(xa, 2) == size(xb, 2), 'xa and xb must have same number of columns.');
+assert(all(size([xa; xb]) == size(z)), '[xa; xb] and y must equal in size.');
 
 % number of columns in data
 m = size(xa, 2);
@@ -63,7 +63,11 @@ kb = length(xb);
 %
 % As fa, fb are polynomials of degree n, i.e.
 %
-%   fi = qin0 x1^n + ... + qi0n xm^n + ... + qi10 x1 + ... + qi01 xm + qi0,
+%   fi = qi0 + qi10 x1 + ... + qi01 xm + ... + qin0 x1^n + ... + qi0n xm^n,
+%
+% with
+%
+%   qi = [qi0 qi10 ... qi01 ... qin0 ... qi0n]^T
 %
 % the objective can be written as least-square problem in q = [q1 q2]^T:
 %
@@ -88,63 +92,92 @@ kb = length(xb);
 %   <=>
 %       [1 -1 x0 -x0 ... x0^n -x0^n]*q = 0.
 %
-% For m > 1, we have the surface equality constraint
+% For m = 2, we have the surface equality constraint
 %
-%   fa(x0, X') = fb(x0, X')
+%   fa(x0, y) = fb(x0, y)
 %
-% for all X' in R^(m-1) equivalent to the matrix equality
+% for all y in R equivalent to the matrix equality
 %
-%       []
+%       [y^n, ..., 1]*A'*q1 = [y^n, ..., 1]*A'*q2
+%   <=>
+%       [A' -A']*q = [0, ..., 0]^T
+%
+% with
+%
+%        |  1  |  ...  | x0^(n-1) ... 0 | x0^n    0     ... 0 |
+%        |-----|       |           \    |      x0^(n-1)       |
+%   A' = |-------------|              1 |                \    |.
+%        |------------------------------|                   1 |
+%        |----------------------------------------------------|
 %
 
-if nargin < 5
+
+if ~exist('x0', 'var')
     % no equality constraint
     Aeq = [];
     beq = [];
     x0 = NaN;
-else
+elseif m == 1
     % equality constraint
     % Aeq1*q1 + Aeq2*q2 = beq
     Aeq1 = double(p(x0)');
     Aeq = [Aeq1 -Aeq1];
     beq = 0;
+elseif m == 2
+    Aeq1 = zeros(n+1,r);
+    j = 0;
+    for N=0:n
+        [pN, ~, rN] = monomials(N, 1);
+        pNx0 = double(pN(x0)');
+        Aeq1(1:rN,j+(1:rN)) = diag(pNx0(rN:-1:1));
+        j = j + rN;
+    end
+    Aeq = [Aeq1 -Aeq1];
+    beq = zeros(n+1,1);
+else
+    error('Functions of more than 2 variables are not supported yet.');
 end
 
 % least squares objective
 % find q minimizing the L2-norm
 % ||C*q-d||^2
-C = zeros(ka+kb, 2*(n+1));
+C = zeros(ka+kb, 2*r);
 d = z;
 for j = 1:ka
-    C(j,1+(0:n)) = double(p(xa(j))');
+    Xj = num2cell(xa(j,:));
+    C(j,1:r) = double(p(Xj{:})');
 end
 for j = 1:kb
-    C(ka+j, n+1+(0:n)+1) = double(p(xb(j))');
+    Xj = num2cell(xb(j,:));
+    C(ka+j, r+(1:r)) = double(p(Xj{:})');
 end
 
 % inequality condition
 % A*q <= b
-A = ones(1,2*(n+1));
+A = ones(1,2*r);
 b = 1e4;
 
 % solve LSQ for q
 q = lsqlin(C, d, A, b, Aeq, beq);
 
 % piece-wise coefficients
-q1 = q(1+(0:n));
-q2 = q(n+1+(0:n)+1);
+qa = q(1+(0:n));
+qb = q(n+1+(0:n)+1);
 
 % piece-wise functions
-syms x
-f1(x) = q1'*p(x);
-f2(x) = q2'*p(x);
+P = formula(p);
+Fa = qa'*P;
+Fb = qb'*P;
+fa = symfun(Fa, X);
+fb = symfun(Fb, X);
 
 % if no x0 was given, find x0 s.t. f1(x0) == f2(x0)
 if isnan(x0)
-    x0 = fsolve(@(x) double(f1(x)-f2(x)), xa(end));
+    Y0 = num2cell(zeros(1,m-1));
+    x0 = fsolve(@(x) double(fa(x,Y0{:})-fb(x,Y0{:})), xa(end));
 end
 
-fitobject = pwfitobject(sprintf('poly%g', n), {f1, f2}, x0, [q1 q2], n);
+fitobject = pwfitobject(['poly' sprintf('%g', n+zeros(1,m))], {fa, fb}, x0, [qa qb], n);
 
 % piece-wise function f
 % f(x) = piecewise(x<=x0, f1(x), f2(x));
