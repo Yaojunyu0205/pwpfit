@@ -125,13 +125,13 @@ f(x) = piecewise(x<=x0, f1(x), f2(x));
 
 end
 
-function p = monomials(n)
-%MONOMIALS Creates a column vector of monomials to degree n.
-%   Vector p is symbolic function of x, i.e. p(x) = [1,...,x^n]^T.
-    syms x
-    P = sym('P', [n 1]);
-    for i = 0:n
-        P(1+i) = x^i;
-    end
-    p = symfun(P, x);
-end
+% function p = monomials(n)
+% %MONOMIALS Creates a column vector of monomials to degree n.
+% %   Vector p is symbolic function of x, i.e. p(x) = [1,...,x^n]^T.
+%     syms x
+%     P = sym('P', [n 1]);
+%     for i = 0:n
+%         P(1+i) = x^i;
+%     end
+%     p = symfun(P, x);
+% end

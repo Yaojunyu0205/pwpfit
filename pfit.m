@@ -82,27 +82,3 @@ fitobject = pwfitobject(sprintf('poly%g%g', n, n), f, [], q, n);
 
 
 end
-
-function [p, X, r] = monomials(n, m)
-%MONOMIALS Creates a column vector of monomials in m variables to degree n.
-%   Vector p is symbolic function of X = [x1,...,xm] and has length r.
-
-    % length of p for 0 < m < 3
-    r = ((n+1)^m + n+1)/2;
-    X = sym('X', [m 1]);
-    P = sym('P', [r 1]);
-    l = 1;
-    for i = 0:n
-        switch m
-            case 1, P(l) = X^i; l = l+1;
-            case 2
-                for j = 0:i
-                    P(l) = X(1)^(i-j)*X(2)^j;
-                    l = l+1;
-                end
-            otherwise
-                error('Monomials of more than 2 variables are not supported yet.');
-        end
-    end
-    p = symfun(P, X);
-end
