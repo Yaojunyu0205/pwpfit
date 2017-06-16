@@ -24,10 +24,13 @@ function [fitobject, x0] = pfit (x, z, n)
 %
 %%
 
+% number of columns in data
+m = size(x, 2);
+
 % column of monomials to degrees n1,...,nm
 % p(x) = [1,...,x^n]^T
 % where the length of p is r.
-[p, X, r] = monomials(n, length(x(1,:)));
+[p, X, r] = monomials(n, m);
 
 % length of data
 % k = #x = #y = #z
@@ -38,7 +41,7 @@ k = length(z);
 %
 % As f is polynomial of degree n, i.e.
 %
-%   f = qn0 x1^n + ... + q0n xm^n + ... + q10 x1 + ... + q01 xm + q0,
+%   f = q0 + q10 x1 + ... + q01 xm + ... + qn0 x1^n + ... + q0n xm^n + ,
 %
 % with q = [q0 q10 ... q01 ... qn0 ... q0n]^T, the objective can be written
 % as least-square problem in q:
@@ -78,7 +81,7 @@ P = formula(p);
 F = q'*P;
 f = symfun(F, X);
 
-fitobject = pwfitobject(sprintf('poly%g%g', n, n), f, [], q, n);
+fitobject = pwfitobject(['poly' sprintf('%g', n+zeros(1,m))], f, [], q, n);
 
 
 end
