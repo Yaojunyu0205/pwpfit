@@ -1,53 +1,69 @@
-function [fitobject, x0] = pwpfit (x1, x2, y, n, x0)
+function [fitobject, x0] = pwpfit (xa, xb, z, n, x0)
 %PWPFIT Fits piece-wise polynomial functions to data under constraints.
 %
 % Finds a piece-wise defined, polynomial function
 %
-%   f(x) = f1(x) if x <= x0, f2(x) else,
+%   f(x) = fa(x1,...,xm) if x1 <= x0, fb(x1,...,xm) else,
 %
-% where f1, f2 are polynomials in x of degree n; 
+% where fa, fb are polynomials in x1,...,xm of degree n,
+%
+%   fa(x) = an0 x1^n + ... + a0n xm^n + ... + a10 x1 + ... + a01 xm + a0;
+%   fb(x) = bn0 x1^n + ... + b0n xm^n + ... + b10 x1 + ... + b01 xm + b0;
+%
 % minimizing
 %
-%   sum[j=1:k1] |f1(x1(j)) - y(j)|^2 + sum[j=1:k2] |f2(x2(j)) - y(k1+j)|^2,
+%   sum[j=1:ka] |fa(xa1(j),...,xam(j)) - y(j)|^2 
+%                        + sum[j=1:kb] |fb(xb1(j),...,xbm(j)) - y(ka+j)|^2,
 %
-% where k1, k2 are the length of x1, x2, respectively, and k1+k2 = n is the
+% where ka, kb are the length of xa, xb, respectively, and ka+kb = k is the
 % length of y;
 % subject to
 %
-%   f1(x0) == f2(x0).
+%   fa(x0,...) == fb(x0,...)
+%
+% for all x2,...,xm in R^(m-1).
 %
 %% Usage and description
 %
-%   fitobject, x0 = pwpfit(x1, x2, y, n)
-%       (...)     = pwpfit(..., x0)
+%   [fitobject, x0] = pwpfit(xa, xb, y, n)
+%   [...] = pwpfit(..., x0)
 %
-% If there is no |x0| given, it is calculated based on the fit of |f1| and
-% |f2|.
+% Returns fit of xa, xb against y, where xa, xb, xy are column vectors with
+% size([xa; xb]) = size(y).
+% If there is no |x0| given, it is calculated based on the fit of fa and
+% fb.
 %
 %% About
 %
 % * Author:     Torbjoern Cunis
 % * Email:      <mailto:torbjoern.cunis@onera.fr>
 % * Created:    2017-02-22
-% * Changed:    2017-02-23
+% * Changed:    2017-06-16
 %
 %%
 
+assure(size(xa, 2) == size(xb, 2), 'xa and xb must have same number of columns.');
+assure(all(size([xa; xb]) == size(z)), '[xa; xb] and y must equal in size.');
+
+% number of columns in data
+m = size(xa, 2);
+
 % column of monomials to degree n
 % p(x) = [1,...,x^n]^T
-p = monomials(n);
+[p, X, r] = monomials(n, m);
 
 % length of piece-wise data
 % k1 = #x1 = #y1
-k1 = length(x1);
+ka = length(xa);
 % k2 = #x2 = #y2
-k2 = length(x2);
+kb = length(xb);
+
 
 %% Reduction to least-square optimization
 %
-% As f1, f2 are polynomials of degree n, i.e.
+% As fa, fb are polynomials of degree n, i.e.
 %
-%   fi = qin x^n + ... + qi1 x + qi0,           i=1,2,
+%   fi = qin0 x1^n + ... + qi0n xm^n + ... + qi10 x1 + ... + qi01 xm + qi0,
 %
 % the objective can be written as least-square problem in q = [q1 q2]^T:
 %
@@ -55,20 +71,30 @@ k2 = length(x2);
 %
 % where ||.|| is the L2-norm and
 %
-%       | 1 x1,1  ... x1,1^n  |                     |
-%   	| :   :    \     :    |          0          |
-%       | 1 x1,k1 ... x1,k1^n |                     |
-%   C = | ------------------------------------------|,
-%       |                     | 1 x2,1  ... x2,1^n  |
-%   	|          0          | :   :    \     :    |
-%       |                     | 1 x2,k2 ... x2,k2^n |
+%       | Ca |    |
+%   C = |---------|
+%       |    | Cb |
 %
-% subject to the equality constraint which is equivalent to the matrix 
-% equality
+% with
+%
+%        | 1 xi1,1  ... xim,1  ... xi1,1^n  ... xim,1^n   |
+%   Ci = | :    :    \     :    \     :      \     :      |
+%        | 1 xi1,ki ... xim,ki ... xi1,ki^n ... xim,ki^n  |
+%
+% subject to the curve equality constraint fa(x0) == fb(x0), 
+% which for m = 1 is equivalent to the matrix equality
 %
 %       [1 x0 ... x0^n]*q1 = [1 x0 ... x0^n]*q2
 %   <=>
 %       [1 -1 x0 -x0 ... x0^n -x0^n]*q = 0.
+%
+% For m > 1, we have the surface equality constraint
+%
+%   fa(x0, X') = fb(x0, X')
+%
+% for all X' in R^(m-1) equivalent to the matrix equality
+%
+%       []
 %
 
 if nargin < 5
@@ -87,13 +113,13 @@ end
 % least squares objective
 % find q minimizing the L2-norm
 % ||C*q-d||^2
-C = zeros(k1+k2, 2*(n+1));
-d = y;
-for j = 1:k1
-    C(j,1+(0:n)) = double(p(x1(j))');
+C = zeros(ka+kb, 2*(n+1));
+d = z;
+for j = 1:ka
+    C(j,1+(0:n)) = double(p(xa(j))');
 end
-for j = 1:k2
-    C(k1+j, n+1+(0:n)+1) = double(p(x2(j))');
+for j = 1:kb
+    C(ka+j, n+1+(0:n)+1) = double(p(xb(j))');
 end
 
 % inequality condition
@@ -115,13 +141,13 @@ f2(x) = q2'*p(x);
 
 % if no x0 was given, find x0 s.t. f1(x0) == f2(x0)
 if isnan(x0)
-    x0 = fsolve(@(x) double(f1(x)-f2(x)), x1(end));
+    x0 = fsolve(@(x) double(f1(x)-f2(x)), xa(end));
 end
 
 fitobject = pwfitobject(sprintf('poly%g', n), {f1, f2}, x0, [q1 q2], n);
 
 % piece-wise function f
-f(x) = piecewise(x<=x0, f1(x), f2(x));
+% f(x) = piecewise(x<=x0, f1(x), f2(x));
 
 end
 
