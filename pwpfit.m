@@ -43,7 +43,7 @@ function [fitobject, x0] = pwpfit (xa, xb, z, n, x0)
 %%
 
 assert(size(xa, 2) == size(xb, 2), 'xa and xb must have same number of columns.');
-assert(all(size([xa; xb]) == size(z)), '[xa; xb] and y must equal in size.');
+assert(size([xa; xb],1) == size(z,1), '[xa; xb] and y must have same number of rows.');
 
 % number of columns in data
 m = size(xa, 2);
@@ -161,8 +161,8 @@ b = 1e4;
 q = lsqlin(C, d, A, b, Aeq, beq);
 
 % piece-wise coefficients
-qa = q(1+(0:n));
-qb = q(n+1+(0:n)+1);
+qa = q(0+(1:r));
+qb = q(r+(1:r));
 
 % piece-wise functions
 P = formula(p);
