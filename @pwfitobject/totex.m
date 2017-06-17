@@ -129,7 +129,8 @@ else
         end
     end
     if j < m 
-        tex = sprintf(['%s\t& \\text{if $%s \\leq ' p.lfmt '$}'], tex, p.var, p.lcnv(obj.xi(j)));
+        if ~iscell(p.var), var = p.var; else, var = p.var{1};           end
+        tex = sprintf(['%s\t& \\text{if $%s \\leq ' p.lfmt '$}'], tex, var, p.lcnv(obj.xi(j)));
     end
 end
 
@@ -144,7 +145,7 @@ function tex = printterm(tex, p, coeff, i)
     end
     tex = sprintf(['%s' p.vfmt '%s '], tex, abs(coeff), monomial(p, i));
 end
-    
+
 function tex = monomial(p, i)
     if ~iscell(p.var)
 %         if iscell(i), i = i{1}; end
