@@ -118,15 +118,16 @@ else
     end
     l = 1;
     for i=p.degrees
-        if ~iscell(p.var)
-            tex = printterm(tex, p, obj.coeffs(l,j), i);
-            l = l + 1;
-        else
-            for k=0:i
-                tex = printterm(tex, p, obj.coeffs(l,j), {i k});
-                l = l + 1;
-            end
-        end
+        [tex, l] = printterm(tex, p, obj.coeffs(:,j), l, i);
+%         if ~iscell(p.var)
+%             tex = printterm(tex, p, obj.coeffs(l,j), i);
+%             l = l + 1;
+%         else
+%             for k=0:i
+%                 tex = printterm(tex, p, obj.coeffs(l,j), {i k});
+%                 l = l + 1;
+%             end
+%         end
     end
     if j < m 
         if ~iscell(p.var), var = p.var; else, var = p.var{1};           end
@@ -137,13 +138,23 @@ end
 
 end
 
-function tex = printterm(tex, p, coeff, i)
-    if coeff >= 0 && ~strcmp(tex, '')
-        tex = sprintf('%s+ ', tex);
-    elseif coeff < 0
-        tex = sprintf('%s- ', tex);
+function [tex, l] = printterm(tex, p, coeffs, l, i, x0)
+    if ~exist('x0', 'var'), x0 = ''; end
+
+    if ~iscell(p.var)
+        if coeffs(l) >= 0 && ~strcmp(tex, '')
+            tex = sprintf('%s+ ', tex);
+        elseif coeffs(l) < 0
+            tex = sprintf('%s- ', tex);
+        end
+        tex = sprintf(['%s' p.vfmt '%s' '%s '], tex, abs(coeffs(l)), x0, monomial(p, i));
+        l = l + 1;
+    else
+        for k=0:i
+            [p1, p2] = popvar(p);
+            [tex, l] = printterm(tex, p2, coeffs, l, k, [x0 monomial(p1, i-k)]);
+        end
     end
-    tex = sprintf(['%s' p.vfmt '%s '], tex, abs(coeff), monomial(p, i));
 end
 
 function tex = monomial(p, i)
@@ -165,4 +176,16 @@ function pout = getvar(pin, k)
     
     pout = pin;
     pout.var = pin.var{k};
+end
+
+function [p1, p2] = popvar(pin)
+    %POPVAR     Returns and remove p-struct for 1st variable.
+    
+    p1 = pin; p2 = pin;
+    p1.var = pin.var{1};
+    if length(pin.var) > 2
+        p2.var = pin.var(2:end);
+    else
+        p2.var = pin.var{2};
+    end
 end
