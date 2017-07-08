@@ -1,4 +1,4 @@
-function tex = totex(obj, var, vfmt, lfmt, lcnv, order, efmt, mfmt)
+function tex = totex(obj, var, vfmt, lfmt, lcnv, order, efmt, mfmt, j)
 %TOTEX Returns tex string representation of piece-wise fit.
 %
 %% Usage and description
@@ -39,11 +39,15 @@ if nargin > 1 && isstruct(var)
     j = vfmt;
 else
 % case selected
-j = -1;
-
+if ~exist('j', 'var')
+    j = -1;
+end
+    
 % determine free variable
 if nargin < 2 || isempty(var)
     p.var = 'x';
+elseif iscell(var) && length(var) == 1
+    p.var = var{1};
 else
     p.var = var;
 end
@@ -119,17 +123,8 @@ else
     l = 1;
     for i=p.degrees
         [tex, l] = printterm(tex, p, obj.coeffs(:,j), l, i);
-%         if ~iscell(p.var)
-%             tex = printterm(tex, p, obj.coeffs(l,j), i);
-%             l = l + 1;
-%         else
-%             for k=0:i
-%                 tex = printterm(tex, p, obj.coeffs(l,j), {i k});
-%                 l = l + 1;
-%             end
-%         end
     end
-    if j < m 
+    if j < m && nargin < 9
         if ~iscell(p.var), var = p.var; else, var = p.var{1};           end
         tex = sprintf(['%s\t& \\text{if $%s \\leq ' p.lfmt '$}'], tex, var, p.lcnv(obj.xi(j)));
     end
