@@ -69,10 +69,7 @@ j = var;
 
 if length(obj) > 1
     for o = obj(:)'
-        p.var  = o.var;
-        p.name = o.name;
-        
-        fprintf(p.file, '%%%% %s(%s)\n', p.name, parameter(p.var));
+        fprintf(p.file, '%%%% %s(%s)\n', o.name, parameter(o.var));
         
         tomatlab(o, p, -1);
         
@@ -83,14 +80,14 @@ elseif m > 1 && j < 0
         tomatlab(obj, p, j);
     end
 else
-    fprintf(p.file, '%s', p.name);
+    fprintf(p.file, '%s', obj.name);
     if j < 0
         j = 1;
     else
         fprintf(p.file, '%u', j);
     end
     
-    tex = totex(obj, p.var, [], [], [], [], {'.^'}, '.*', j);
+    tex = totex(obj, obj.var, [], [], [], [], {'.^'}, '.*', j);
     fprintf(p.file, ' = @(%s) %s;\n', parameter(p.var), tex);
     
     if j < m
@@ -102,12 +99,7 @@ end
 end
 
 function par = parameter(var)
-    par = '';
-    for i=1:length(var)
-        par = sprintf('%s%s', par, var{i});
-        
-        if i < length(var)
-            par = sprintf('%s,', par);
-        end
-    end
+    if isempty(var), var = {}; end
+
+    par = [sprintf('%s,', var{:}), '~'];
 end
