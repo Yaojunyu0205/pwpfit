@@ -27,6 +27,9 @@ classdef pwfitobject
         
         degree;
         coeffs;
+        
+        var;
+        name;
     end
     
     methods(Static, Access=protected)
@@ -50,9 +53,11 @@ classdef pwfitobject
     end
     
     methods
-        tex = totex(obj, var, vfmt, lfmt, lcnv, order, efmt, mfmt);
+        tex = totex(obj, var, vfmt, lfmt, lcnv, order, efmt, mfmt, j);
         
-        function obj = pwfitobject(type, fi, xi, coeffs, degree)
+        varargout = tomatlab(obj, data_file, var, name);
+        
+        function obj = pwfitobject(type, fi, xi, coeffs, degree, name, var)
             %PWFITOBJECT Creates a new pwfitobject.
             %
             %% Usage and description
@@ -73,6 +78,14 @@ classdef pwfitobject
             obj.degree = degree;
             
             obj.f = pwfitobject.pwfunction(fi, xi);
+            
+            if exist('name', 'var')
+                obj.name = name;
+                obj.var  = var;
+            else
+                obj.name = 'f';
+                obj.var  = {'x'};
+            end
         end
         
         function varargout = plot(obj, varargin)

@@ -68,13 +68,13 @@ p = data_file;
 j = var;
 
 if length(obj) > 1
-    for n=1:length(obj)
-        p.var  = obj(n).var;
-        p.name = obj(n).name;
+    for o = obj(:)'
+        p.var  = o.var;
+        p.name = o.name;
         
         fprintf(p.file, '%%%% %s(%s)\n', p.name, parameter(p.var));
         
-        tomatlab(obj(n), p, -1);
+        tomatlab(o, p, -1);
         
         fprintf(p.file, '\n');
     end    

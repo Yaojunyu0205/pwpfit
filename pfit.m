@@ -1,4 +1,4 @@
-function [fitobject, x0] = pfit (x, z, n)
+function [fitobject, x0] = pfit (x, z, n, varargin)
 %PFIT Fits multi-dimensional, polynomial function to data.
 %
 % Finds polynomial function in x1,...,xm of degrees n
@@ -81,7 +81,7 @@ P = formula(p);
 F = q'*P;
 f = symfun(F, X);
 
-fitobject = pwfitobject(['poly' sprintf('%g', n+zeros(1,m))], f, [], q, n);
+fitobject = pwfitobject(['poly' sprintf('%g', n+zeros(1,m))], f, [], q, n, varargin{:});
 
 
 end

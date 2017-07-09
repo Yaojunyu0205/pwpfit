@@ -1,4 +1,4 @@
-function [fitobject, x0] = pwpfit (xa, xb, z, n, x0)
+function [fitobject, x0] = pwpfit (xa, xb, z, n, x0, varargin)
 %PWPFIT Fits piece-wise polynomial functions to data under constraints.
 %
 % Finds a piece-wise defined, polynomial function
@@ -112,7 +112,7 @@ kb = length(xb);
 %
 
 
-if ~exist('x0', 'var')
+if ~exist('x0', 'var') || isnan(x0)
     % no equality constraint
     Aeq = [];
     beq = [];
@@ -177,7 +177,7 @@ if isnan(x0)
     x0 = fsolve(@(x) double(fa(x,Y0{:})-fb(x,Y0{:})), xa(end));
 end
 
-fitobject = pwfitobject(['poly' sprintf('%g', n+zeros(1,m))], {fa, fb}, x0, [qa qb], n);
+fitobject = pwfitobject(['poly' sprintf('%g', n+zeros(1,m))], {fa, fb}, x0, [qa qb], n, varargin{:});
 
 % piece-wise function f
 % f(x) = piecewise(x<=x0, f1(x), f2(x));
