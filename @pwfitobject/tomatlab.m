@@ -46,7 +46,12 @@ end
 
 
 % open file for writing
-p.file = fopen(data_file, 'w', 'n', 'UTF-8');
+if ~isempty(data_file)
+    p.file = fopen(data_file, 'w', 'n', 'UTF-8');
+else
+    % write to stdout
+    p.file = 1;
+end
 
 fprintf(p.file, ...
         '%% THIS FILE HAS BEEN WRITTEN BY pwfitobject/tomatlab.m %%\n\n');
@@ -58,7 +63,9 @@ end
 
 tomatlab(obj, p, -1);
 
-fclose(p.file);
+if p.file > 2 % other than stdout/stderr
+    fclose(p.file);
+end
 
 varargout = {p.file};
     
@@ -101,5 +108,5 @@ end
 function par = parameter(var)
     if isempty(var), var = {}; end
 
-    par = [sprintf('%s,', var{:}), '~'];
+    par = [sprintf('%s,', var{:}), 'varargin'];
 end
