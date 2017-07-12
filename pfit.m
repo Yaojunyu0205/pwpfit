@@ -1,4 +1,4 @@
-function [fitobject, x0] = pfit (x, z, n, varargin)
+function [fitobject] = pfit (x, z, n, varargin)
 %PFIT Fits multi-dimensional, polynomial function to data.
 %
 % Finds polynomial function in x1,...,xm of degrees n
@@ -12,9 +12,9 @@ function [fitobject, x0] = pfit (x, z, n, varargin)
 % where k is the length of x and z.
 % If the zero constraint is set, the solution f fulfills
 %
-%   f(x0,x2,...,xm) = 0
+%   f(x1,Y0) = 0
 %
-% for all [x2...xm].
+% for all x1.
 %
 %% Usage and description
 %
@@ -42,10 +42,10 @@ m = size(x, 2);
 k = length(z);
 
 if ~isempty(varargin) && isnumeric(varargin{1})
-    x0 = varargin{1};
+    y0 = varargin{1};
     varargin(1) = [];
 else
-    x0 = NaN;
+    y0 = NaN;
 end
 
 
@@ -92,26 +92,39 @@ end
 %
 
 
-% zero equality constraint
+% zero constraint
 % Aeq*q = 0
-if isempty(x0) || isnan(x0)
-    % no equality constraint
-    Aeq = [];
-    beq = [];
-    x0 = NaN;
+if isempty(y0) || all(isnan(y0))
+    % no zero constraint
+    Azero = [];
+    bzero = [];
 elseif m == 1
-    Aeq = double(p(x0)');
-    beq = 0;
+    Azero = double(p(y0)');
+    bzero = 0;
 elseif m == 2
-    Aeq = zeros(n+1,r);
+    Azero = zeros(n+1,r);
     j = 0;
     for N=0:n
         [pN, ~, rN] = monomials(N, 1);
-        pNx0 = double(pN(x0)');
-        Aeq(1:rN,j+(1:rN)) = cdiag(pNx0(rN:-1:1));
+        pNy0 = double(pN(y0)');
+        Azero(1:rN,j+(1:rN)) = cdiag(pNy0(rN:-1:1));
         j = j + rN;
     end
-    beq = zeros(n+1,1);
+    bzero = zeros(n+1,1);
+elseif m > 2
+    Azero = zeros(n+1,r);
+    Y0 = num2cell(y0);
+    j = 0;
+    for N=0:n
+        for i=0:N
+            % get monomials vector in x2,...,xm of degree i
+            [pNi, ~, rNi] = monomials({i}, m-1);
+            pNiy0 = double(pNi(Y0{:}));
+            Azero(1+N-i,j+(1:rNi)) = pNiy0';
+            j = j + rNi;
+        end
+    end
+    bzero = zeros(n+1,1);
 else
     error('Zero constraint for more than 2 variables is not supported yet.');
 end
@@ -134,7 +147,7 @@ A = ones(1,r);
 b = 1e4;
 
 % solve LSQ for q
-q = lsqlin(C, d, A, b, Aeq, beq);
+q = lsqlin(C, d, A, b, Azero, bzero);
 
 % function
 P = formula(p);
@@ -144,18 +157,4 @@ f = symfun(F, X);
 fitobject = pwfitobject(['poly' sprintf('%g', n+zeros(1,m))], f, [], q, n, varargin{:});
 
 
-end
-
-function D = cdiag(v)
-%CDIAG  Returns a square matrix which counter-diagonal is v.
-%
-% A counter-diagonal matrix is 
-%
-%       | 0   n |
-%   D = |   /   |
-%       | 1   0 |
-
-    A = diag(v);
-    D = A(:,end:-1:1);
-    
 end
