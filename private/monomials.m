@@ -1,4 +1,4 @@
-function [p, X, r] = monomials(n, m)
+function [p, X, r] = monomials(deg, m)
 %MONOMIALS  Creates monomials in multiple variables.
 %
 %% Usage and description
@@ -35,13 +35,21 @@ if ~exist('X', 'var')
     X = sym('X', [m 1]);
 end
 
+if ~iscell(deg)
+    degrees = 0:deg;
+    n = deg;
+else
+    degrees = cell2mat(deg);
+    n = max(degrees);
+end
+
 
 % length of p for 0 < m < 3
 r = ((n+1)^m + n+1)/2;
 P = sym('P', [r 1]);
 
 l = 1;
-for i = 0:n
+for i = degrees
     [P, l] = monomial(P, l, X, i);
 end
 
