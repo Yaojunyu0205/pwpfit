@@ -58,6 +58,15 @@ ka = length(xa);
 % k2 = #x2 = #y2
 kb = length(xb);
 
+% zero equality constraint
+if ~isempty(varargin) && isnumeric(varargin{1})
+    y0 = varargin{1};
+    varargin(1) = [];
+else
+    y0 = NaN;
+end
+
+
 
 %% Reduction to least-square optimization
 %
@@ -112,7 +121,7 @@ kb = length(xb);
 %
 
 
-% curve equality constraint
+%% Curve equality constraint
 % Aeq1*q1 - Aeq1*q2 = 0
 if ~exist('x0', 'var') || isnan(x0)
     % no equality constraint
@@ -138,7 +147,33 @@ else
     error('Curve equality constraint for more than 2 variables is not supported yet.');
 end
 
-% least squares objective
+%% Zero constraint
+% Aeq*q = 0
+if isempty(y0) || all(isnan(y0))
+    % no constraint
+    Azero = [];
+    bzero = [];
+elseif m == 1
+    Azero1 = double(p(y0)');
+    bzero = [0; 0];
+    Azero = [Azero1 zeros(1,r); zeros(1,r) Azero1];
+elseif m == 2
+    Azero1 = zeros(n+1,r);
+    j = 0;
+    for N=0:n
+        [pN, ~, rN] = monomials(N, 1);
+        pNy0 = double(pN(y0)');
+        Azero1(1:rN,j+(1:rN)) = cdiag(pNy0(rN:-1:1));
+        j = j + rN;
+    end
+    bzero = zeros(2*(n+1),1);
+    Azero = [Azero1 zeros(n+1,r); zeros(n+1,r) Azero1];
+else
+    error('Zero constraint for more than 2 variables is not supported yet.');
+end
+
+
+%% least squares objective
 % find q minimizing the L2-norm
 % ||C*q-d||^2
 C = zeros(ka+kb, 2*r);
@@ -158,7 +193,7 @@ A = ones(1,2*r);
 b = 1e4;
 
 % solve LSQ for q
-q = lsqlin(C, d, A, b, Aeq, beq);
+q = lsqlin(C, d, A, b, [Aeq; Azero], [beq; bzero]);
 
 % piece-wise coefficients
 qa = q(0+(1:r));
