@@ -98,7 +98,7 @@ kb = length(xb);
 %
 % for all y in R equivalent to the matrix equality
 %
-%       [y^n, ..., 1]*A'*q1 = [y^n, ..., 1]*A'*q2
+%       [1, ..., y^n]*A'*q1 = [y^n, ..., 1]*A'*q2
 %   <=>
 %       [A' -A']*q = [0, ..., 0]^T
 %
@@ -112,14 +112,14 @@ kb = length(xb);
 %
 
 
+% curve equality constraint
+% Aeq1*q1 - Aeq1*q2 = 0
 if ~exist('x0', 'var') || isnan(x0)
     % no equality constraint
     Aeq = [];
     beq = [];
     x0 = NaN;
 elseif m == 1
-    % equality constraint
-    % Aeq1*q1 + Aeq2*q2 = beq
     Aeq1 = double(p(x0)');
     Aeq = [Aeq1 -Aeq1];
     beq = 0;
@@ -135,7 +135,7 @@ elseif m == 2
     Aeq = [Aeq1 -Aeq1];
     beq = zeros(n+1,1);
 else
-    error('Functions of more than 2 variables are not supported yet.');
+    error('Curve equality constraint for more than 2 variables is not supported yet.');
 end
 
 % least squares objective
