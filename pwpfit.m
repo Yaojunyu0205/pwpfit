@@ -161,23 +161,17 @@ if isempty(y0) || all(isnan(y0))
     % no constraint
     Azero = [];
     bzero = [];
-elseif m == 1
-    Azero1 = double(p(y0)');
-    bzero = [0; 0];
-    Azero = [Azero1 zeros(1,r); zeros(1,r) Azero1];
-elseif m == 2
-    Azero1 = zeros(n+1,r);
-    j = 0;
-    for N=0:n
-        [pN, ~, rN] = monomials(N, 1);
-        pNy0 = double(pN(y0)');
-        Azero1(1:rN,j+(1:rN)) = cdiag(pNy0(rN:-1:1));
-        j = j + rN;
-    end
-    bzero = zeros(2*(n+1),1);
-    Azero = [Azero1 zeros(n+1,r); zeros(n+1,r) Azero1];
 else
-    error('Zero constraint for more than 2 variables is not supported yet.');
+    Azero1 = eye(r);
+    if length(y0) < m
+        y0 = [ones(1,m-length(y0)) y0];
+    end
+    Y = num2cell(y0);
+    pY = double(p(Y{:}));
+    Azero1(pY==0,:) = [];
+    r0 = size(Azero1,1);
+    Azero = [Azero1 zeros(r0,r); zeros(r0,r) Azero1];
+    bzero = zeros(2*r0,1);
 end
 
 
