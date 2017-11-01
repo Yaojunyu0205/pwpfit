@@ -38,7 +38,7 @@ function [fitobject, x0] = pwpfit (xa, xb, z, n, x0, varargin)
 % * Author:     Torbjoern Cunis
 % * Email:      <mailto:torbjoern.cunis@onera.fr>
 % * Created:    2017-02-22
-% * Changed:    2017-06-16
+% * Changed:    2017-11-01
 %
 %%
 
@@ -126,10 +126,10 @@ problem.solver = 'lsqlin';
 problem.options = optimoptions(problem.solver, 'Algorithm', 'active-set');
 
 
-%% Curve equality constraint
+%% Continuity constraint
 % Aeq1*q1 - Aeq1*q2 = 0
 if ~exist('x0', 'var') || isnan(x0)
-    % no equality constraint
+    % no continuity constraint
     Aeq = [];
     beq = [];
     x0 = NaN;
@@ -137,20 +137,23 @@ elseif m == 1
     Aeq1 = double(p(x0)');
     Aeq = [Aeq1 -Aeq1];
     beq = 0;
-elseif m == 2
-    Aeq1 = zeros(n+1,r);
+elseif m >= 2
+    one = num2cell(ones(1,m-1));
+    [~, ~, rtilde] = monomials(n, m-1);
+    Aeq1 = zeros(rtilde,r);
     j = 0;
     for N=0:n
-        [pN, ~, rN] = monomials(N, 1);
-        pNx0 = double(pN(x0)');
-        Aeq1(1:rN,j+(1:rN)) = diag(pNx0(rN:-1:1));
+        [pN, ~, rN] = monomials({N}, m);
+        pNx0 = double(pN(x0,one{:})');
+        Aeq1(1:rN,j+(1:rN)) = diag(pNx0); %(rN:-1:1));
         j = j + rN;
     end
     Aeq = [Aeq1 -Aeq1];
-    beq = zeros(n+1,1);
+    beq = zeros(rtilde,1);
 else
-    error('Curve equality constraint for more than 2 variables is not supported yet.');
+    error('Continuity constraint for more than 2 variables is not supported yet.');
 end
+
 
 %% Zero constraint
 % Aeq*q = 0
@@ -202,7 +205,6 @@ problem.bineq = 1e4;
 problem.Aeq = [Aeq; Azero];
 problem.beq = [beq; bzero];
 
-% q = lsqlin(problem.C, problem.d, problem.Aineq, problem.bineq, problem.Aeq, problem.beq, [], [], [], problem.options);
 q = lsqlin(problem);
 
 % piece-wise coefficients
