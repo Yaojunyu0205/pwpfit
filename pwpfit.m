@@ -120,6 +120,11 @@ end
 %        |----------------------------------------------------|
 %
 
+% problem structure
+problem.solver = 'lsqlin';
+% use active-set algorithm (depricated)
+problem.options = optimoptions(problem.solver, 'Algorithm', 'active-set');
+
 
 %% Curve equality constraint
 % Aeq1*q1 - Aeq1*q2 = 0
@@ -176,24 +181,29 @@ end
 %% least squares objective
 % find q minimizing the L2-norm
 % ||C*q-d||^2
-C = zeros(ka+kb, 2*r);
-d = z;
+problem.C = zeros(ka+kb, 2*r);
+problem.d = z;
 for j = 1:ka
     Xj = num2cell(xa(j,:));
-    C(j,1:r) = double(p(Xj{:})');
+    problem.C(j,1:r) = double(p(Xj{:})');
 end
 for j = 1:kb
     Xj = num2cell(xb(j,:));
-    C(ka+j, r+(1:r)) = double(p(Xj{:})');
+    problem.C(ka+j, r+(1:r)) = double(p(Xj{:})');
 end
 
-% inequality condition
-% A*q <= b
-A = ones(1,2*r);
-b = 1e4;
 
-% solve LSQ for q
-q = lsqlin(C, d, A, b, [Aeq; Azero], [beq; bzero]);
+% solve LSQ min||C*q - d|| for q
+% where Aineq*q <= bineq
+problem.Aineq = ones(1,2*r);
+problem.bineq = 1e4;
+
+% and Aeq*q == beq
+problem.Aeq = [Aeq; Azero];
+problem.beq = [beq; bzero];
+
+% q = lsqlin(problem.C, problem.d, problem.Aineq, problem.bineq, problem.Aeq, problem.beq, [], [], [], problem.options);
+q = lsqlin(problem);
 
 % piece-wise coefficients
 qa = q(0+(1:r));
