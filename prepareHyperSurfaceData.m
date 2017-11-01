@@ -19,7 +19,7 @@ function varargout = prepareHyperSurfaceData(varargin)
 % * Author:     Torbjoern Cunis
 % * Email:      <mailto:torbjoern.cunis@onera.fr>
 % * Created:    2017-07-07
-% * Changed:    2017-07-07
+% * Changed:    2017-11-01
 %
 %%
 
@@ -42,7 +42,8 @@ switch(nargin)
         %% 3-Dimension: surface fitting
         [varargout{:}] = prepareSurfaceData(varargin{:});
         
-    case 4
+%     case 4
+    otherwise
         %% 4-Dimension: hyper-surface fitting
         % cell-vector of inputs
         Xin = varargin(1:end-1);
@@ -58,15 +59,15 @@ switch(nargin)
         % re-order for mesh
         % dimensions of X1mesh,...,XNmesh must equal dimensions of Zin
         Xmesh = cell(1, length(Xin));
-        [Xmesh{:}] = meshgrid(Xin{[2 3 1]});
+        [Xmesh{:}] = ndgrid(Xin{end:-1:1});
         
         % transform to columns
         data = cellfun( @(c) c(:), [Xmesh, Zin], 'UniformOutput', false );
         
         % re-re-order for output
-        varargout = [data([3 1 2]), data(end)];
+        varargout = [data((end-1):-1:1), data(end)];
         
-    otherwise
-        error('Hyper-surfaces of dimension greater than 4 not supported yet.');
+%     otherwise
+%         error('Hyper-surfaces of dimension greater than 4 not supported yet.');
 end
 
