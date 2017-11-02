@@ -80,6 +80,9 @@ classdef pwfitobject
             obj.f = pwfitobject.pwfunction(fi, xi);
             
             if exist('name', 'var')
+                if ~exist('var', 'var')
+                    var = {};
+                end
                 obj.name = name;
                 obj.var  = var;
             else

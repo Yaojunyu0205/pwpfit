@@ -94,7 +94,13 @@ else
         fprintf(p.file, '%u', j);
     end
     
-    tex = totex(obj, obj.var, [], [], [], [], {'.^'}, '.*', j);
+    if ~isempty(obj.var)
+        var = obj.var;
+    else
+        var = p.var;
+    end
+    
+    tex = totex(obj, var, [], [], [], [], {'.^'}, '.*', j);
     fprintf(p.file, ' = @(%s) %s;\n', parameter(p.var), tex);
     
     if j < m
