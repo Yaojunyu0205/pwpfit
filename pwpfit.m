@@ -156,7 +156,7 @@ end
 
 
 %% Zero constraint
-% Aeq*q = 0
+% Azero*q = 0
 if isempty(y0) || all(isnan(y0))
     % no constraint
     Azero = [];
