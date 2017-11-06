@@ -1,4 +1,4 @@
-function [fitobject, x0] = pwpfit (xa, xb, z, n, x0, varargin)
+function [fitobject, x0, gof] = pwpfit (xa, xb, z, n, x0, varargin)
 %PWPFIT Fits piece-wise polynomial functions to data under constraints.
 %
 % Finds a piece-wise defined, polynomial function
@@ -12,11 +12,11 @@ function [fitobject, x0] = pwpfit (xa, xb, z, n, x0, varargin)
 %
 % minimizing
 %
-%   sum[j=1:ka] |fa(xa1(j),...,xam(j)) - y(j)|^2 
-%                        + sum[j=1:kb] |fb(xb1(j),...,xbm(j)) - y(ka+j)|^2,
+%   sum[i=1:ka] |fa(xa1(i),...,xam(i)) - z(i)|^2 
+%                        + sum[i=1:kb] |fb(xb1(i),...,xbm(i)) - z(ka+i)|^2,
 %
 % where ka, kb are the length of xa, xb, respectively, and ka+kb = k is the
-% length of y;
+% length of z;
 % subject to
 %
 %   fa(x0,...) == fb(x0,...)
@@ -25,20 +25,36 @@ function [fitobject, x0] = pwpfit (xa, xb, z, n, x0, varargin)
 %
 %% Usage and description
 %
-%   [fitobject, x0] = pwpfit(xa, xb, y, n)
-%   [...] = pwpfit(..., x0)
+%   [fitobject, x0] = pwpfit(xa, xb, z, n)
+%   [...] = pwpfit(..., {x0 | NaN}, [y0 | NaN], [pwfoargs...])
+%   [..., gof] = pwpfit(...)
 %
-% Returns fit of xa, xb against y, where xa, xb, xy are column vectors with
-% size([xa; xb]) = size(y).
-% If there is no |x0| given, it is calculated based on the fit of fa and
-% fb.
+% Returns fit of xa, xb against z, where xa, xb, xy are column vectors with
+% size([xa; xb]) = size(y) and fa(x0,...) == fb(x0,...).
+% If there is no x0 given or |x0 == NaN|, x0 is calculated based on the fit
+% of fa and fb.
+%
+% If the optional parameter y0 (and |y0 != NaN|) is given, the returned fit
+% is zero in the parameter xj if and only if the j-th component of y0 is
+% zero; i.e.
+%
+%   fa(...,xj=0,...) = fb(...,xj=0,...) = 0
+%
+% for all x1,...,x[j-1],x[j+1],...,xm in R^(m-1).
+%
+% The optional argument(s) |pwfoargs| are applied to |fitobject|.
+%
+% |gof| is the goodness-of-fit structure with |gof.rmse| being the Root
+% Mean Squared Error:
+%
+%   rmse = sqrt(sum[i=1:k] |f(x(i)) - z(i)|^2).
 %
 %% About
 %
 % * Author:     Torbjoern Cunis
 % * Email:      <mailto:torbjoern.cunis@onera.fr>
 % * Created:    2017-02-22
-% * Changed:    2017-11-01
+% * Changed:    2017-11-06
 %
 %%
 
@@ -199,7 +215,7 @@ problem.bineq = 1e4;
 problem.Aeq = [Aeq; Azero];
 problem.beq = [beq; bzero];
 
-q = lsqlin(problem);
+[q, resnorm] = lsqlin(problem);
 
 % piece-wise coefficients
 qa = q(0+(1:r));
@@ -220,18 +236,8 @@ end
 
 fitobject = pwfitobject(['poly' sprintf('%g', n+zeros(1,m))], {fa, fb}, x0, [qa qb], n, varargin{:});
 
-% piece-wise function f
-% f(x) = piecewise(x<=x0, f1(x), f2(x));
+% RMSE is square root of residual norm
+gof.rmse = sqrt(resnorm);
+
 
 end
-
-% function p = monomials(n)
-% %MONOMIALS Creates a column vector of monomials to degree n.
-% %   Vector p is symbolic function of x, i.e. p(x) = [1,...,x^n]^T.
-%     syms x
-%     P = sym('P', [n 1]);
-%     for i = 0:n
-%         P(1+i) = x^i;
-%     end
-%     p = symfun(P, x);
-% end
