@@ -1,4 +1,4 @@
-function [fitobject, x0, gof] = pwpfit (xa, xb, z, n, x0, varargin)
+function [fitobject, x0, gof, time] = pwpfit (xa, xb, z, n, x0, varargin)
 %PWPFIT Fits piece-wise polynomial functions to data under constraints.
 %
 % Finds a piece-wise defined, polynomial function
@@ -44,10 +44,17 @@ function [fitobject, x0, gof] = pwpfit (xa, xb, z, n, x0, varargin)
 %
 % The optional argument(s) |pwfoargs| are applied to |fitobject|.
 %
-% |gof| is the goodness-of-fit structure with |gof.rmse| being the Root
+% Returns furthermore:
+% * |gof| is the goodness-of-fit structure with |gof.rmse| being the Root
 % Mean Squared Error:
 %
 %   rmse = sqrt(sum[i=1:k] |f(x(i)) - z(i)|^2).
+%
+% * |time| is structure of elapsed execution time where |time.all| is the
+% overall execution time; |time.lsq| is time to solve LSQ problem;
+% |time.obj| is time to construct LSQ objective matrizes; |time.eq| is time 
+% to construct continuity constraint matrix; |time.zero| is time to
+% construct zero constraint matrix; all times in seconds.
 %
 %% About
 %
@@ -60,6 +67,9 @@ function [fitobject, x0, gof] = pwpfit (xa, xb, z, n, x0, varargin)
 
 assert(size(xa, 2) == size(xb, 2), 'xa and xb must have same number of columns.');
 assert(size([xa; xb],1) == size(z,1), '[xa; xb] and y must have same number of rows.');
+
+% START measure time full computation
+time.all = cputime;
 
 % number of columns in data
 m = size(xa, 2);
@@ -144,6 +154,10 @@ problem.options = optimoptions(problem.solver, 'Algorithm', 'active-set');
 
 %% Continuity constraint
 % Aeq1*q1 - Aeq1*q2 = 0
+
+% START measure time construction Aeq
+time.eq = cputime;
+
 if ~exist('x0', 'var') || isnan(x0)
     % no continuity constraint
     Aeq = [];
@@ -170,9 +184,16 @@ else
     error('Continuity constraint for more than 2 variables is not supported yet.');
 end
 
+% STOP measure time construction Aeq
+time.eq = cputime - time.eq;
+
 
 %% Zero constraint
 % Azero*q = 0
+
+% START measure time construction Azero
+time.zero = cputime;
+
 if isempty(y0) || all(isnan(y0))
     % no constraint
     Azero = [];
@@ -190,10 +211,17 @@ else
     bzero = zeros(2*r0,1);
 end
 
+% STOP measure time construction Azero
+time.zero = cputime - time.zero;
+
 
 %% least squares objective
 % find q minimizing the L2-norm
 % ||C*q-d||^2
+
+% START measure time construction C, d
+time.obj = cputime;
+
 problem.C = zeros(ka+kb, 2*r);
 problem.d = z;
 for j = 1:ka
@@ -205,18 +233,30 @@ for j = 1:kb
     problem.C(ka+j, r+(1:r)) = double(p(Xj{:})');
 end
 
+% STOP measure time construction C, d
+time.obj = cputime - time.obj;
 
+
+%% Linear least square problem
 % solve LSQ min||C*q - d|| for q
 % where Aineq*q <= bineq
 problem.Aineq = ones(1,2*r);
 problem.bineq = 1e4;
-
 % and Aeq*q == beq
 problem.Aeq = [Aeq; Azero];
 problem.beq = [beq; bzero];
 
+
+% START measure time solving LSQ
+time.lsq = cputime;
+
 [q, resnorm] = lsqlin(problem);
 
+% STOP measure time solving LSQ
+time.lsq = cputime - time.lsq;
+
+
+%% Return fitobject & GoF
 % piece-wise coefficients
 qa = q(0+(1:r));
 qb = q(r+(1:r));
@@ -239,5 +279,8 @@ fitobject = pwfitobject(['poly' sprintf('%g', n+zeros(1,m))], {fa, fb}, x0, [qa 
 % RMSE is square root of residual norm
 gof.rmse = sqrt(resnorm);
 
+
+% STOP measure time full computation
+time.all = cputime - time.all;
 
 end
