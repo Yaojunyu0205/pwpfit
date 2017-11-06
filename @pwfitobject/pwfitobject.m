@@ -53,6 +53,8 @@ classdef pwfitobject
     end
     
     methods
+        varargout = plot(obj, varargin);
+        
         tex = totex(obj, var, vfmt, lfmt, lcnv, order, efmt, mfmt, j);
         
         varargout = tomatlab(obj, data_file, var, name);
@@ -90,23 +92,7 @@ classdef pwfitobject
                 obj.var  = {'x'};
             end
         end
-        
-        function varargout = plot(obj, varargin)
-            %PLOT Plots the piece-wise defined function.
-            %
-            % See also PLOT
-            %%
-            if length(symvar(obj.f)) > 1
-                varargout{:} = fsurf(obj.f, varargin{:});
-            else
-                varargout{:} = fplot(obj.f, varargin{:});
-            end
-            
-            if nargout < 1
-                varargout = {};
-            end
-        end
-        
+                
         function f = plus(obj1, obj2)
             %PLUS Overloaded binary operator '+'.
             %   Returns the piece-wise defined function f = f1 + f2, where
