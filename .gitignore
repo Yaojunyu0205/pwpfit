@@ -1,0 +1,22 @@
+.DS_Store
+
+# ignore matlab temporary files
+*.m~
+
+# ignore simulink ressources
+slprj
+*.mexmaci64
+
+# ignore data files
+*.dat
+
+# ignore images and tex files
+*.png
+*.tex
+
+# ignore archives
+*.zip
+
+
+# ignore specific files and folders
+theory/InversePendulum/html
