@@ -1,4 +1,4 @@
-%PWFIT Functions and classes for piece-wise data fitting.
+%PWPFIT Functions and classes for piece-wise data fitting.
 %
 %% About
 %
