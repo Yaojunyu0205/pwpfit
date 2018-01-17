@@ -1,5 +1,9 @@
 .DS_Store
 
+# ignore GTM coefficients file (automatically generated)
+demo/coefficients.m
+
+
 # ignore matlab temporary files
 *.m~
 
