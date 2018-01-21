@@ -238,6 +238,11 @@ for j = 1:kb
     problem.C(ka+j, r+(1:r)) = double(p(Xj{:})');
 end
 
+% remove NaN rows from C, d
+In = isnan(z);
+problem.C(In,:) = [];
+problem.d(In)   = [];
+
 % STOP measure time construction C, d
 time.obj = cputime - time.obj;
 
