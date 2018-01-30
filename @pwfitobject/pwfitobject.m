@@ -58,6 +58,7 @@ classdef pwfitobject
         tex = totex(obj, var, vfmt, lfmt, lcnv, order, efmt, mfmt, j);
         
         varargout = tomatlab(obj, data_file, var, name);
+        varargout = tolatex(obj, data_file, var, varargin);
         
         function obj = pwfitobject(type, fi, xi, coeffs, degree, name, var)
             %PWFITOBJECT Creates a new pwfitobject.
