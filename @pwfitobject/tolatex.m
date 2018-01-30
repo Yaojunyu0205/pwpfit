@@ -60,14 +60,12 @@ p.vfmt = '\\num{%#.4e}';
 p.lfmt = '\\SI{%#.4e}{\\degree}';
 p.lcnv = @rad2deg;
 
-p.texenv = 'align';
-
 fprintf(p.file, ...
         '%% THIS FILE HAS BEEN WRITTEN BY pwfitobject/tolatex.m %%\n\n');
     
     
 if ~isempty(obj(1).xi)
-    fprintf(p.file, '\\providecommand\\case[2][i]{{#2}^{\\left\\{#1\\right\\}}}\n\n');
+    fprintf(p.file, ['\\providecommand\\%slim{' p.lfmt '}\n\n'], p.var{1}, p.lcnv(obj(1).xi));
 end
 
 tolatex(obj, p, -1);
@@ -86,11 +84,9 @@ j = var;
 if length(obj) > 1
     for o = obj(:)'
         fprintf(p.file, '%%%% %s(%s)\n', o.name, parameter(o.var));
-        fprintf(p.file, '\\begin{%s}\n', p.texenv);
         
         tolatex(o, p, -1);
         
-        fprintf(p.file, '\\end{%s}\n', p.texenv);
         fprintf(p.file, '\n');
     end    
 elseif m > 1 && j < 0
@@ -98,13 +94,12 @@ elseif m > 1 && j < 0
         tolatex(obj, p, j);
     end
 else
-    fmt = '%1$s';
+    fprintf(p.file, '\\newcommand\\%s', replace(obj.name, {'.' '_'}, ''));
     if j < 0
         j = 1;
     else
-        fmt = ['\\case[%2$u]{' fmt '}'];
+        fprintf(p.file, pad('', j, 'i'));
     end
-    fprintf(p.file, fmt, obj.name, j);
     
     if ~isempty(obj.var)
         var = obj.var;
@@ -118,10 +113,9 @@ else
     end
     
     tex = totex(obj, var, p.vfmt, p.lfmt, p.lcnv, [], {'^'}, ' ', j);
-    fprintf(p.file, '\\!\\left(%s\\right) &= %s;\n', parameter(var), tex);
+    fprintf(p.file, '{%s}\n', tex);
     
     if j < m
-        fprintf(p.file, '\\\\\n');
     end
 end
 
