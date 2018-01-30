@@ -67,7 +67,7 @@ fprintf(p.file, ...
     
     
 if ~isempty(obj(1).xi)
-    fprintf(p.file, '\\ProvideCommand\\case[2][i]{{#2}^{\\left\\{#1\\right\\}}}\n\n');
+    fprintf(p.file, '\\providecommand\\case[2][i]{{#2}^{\\left\\{#1\\right\\}}}\n\n');
 end
 
 tolatex(obj, p, -1);
@@ -118,9 +118,10 @@ else
     end
     
     tex = totex(obj, var, p.vfmt, p.lfmt, p.lcnv, [], {'^'}, ' ', j);
-    fprintf(p.file, '\\!\\left(%s\\right) &= %s; \\\\\n', parameter(var), tex);
+    fprintf(p.file, '\\!\\left(%s\\right) &= %s;\n', parameter(var), tex);
     
     if j < m
+        fprintf(p.file, '\\\\\n');
     end
 end
 
