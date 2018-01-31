@@ -100,6 +100,7 @@ else
         var = p.var;
     end
     
+    % print all coefficients (epsilon = NaN)
     tex = totex(obj, var, [], [], [], [], {'.^'}, '.*', NaN, j);
     fprintf(p.file, ' = @(%s) %s;\n', parameter(p.var), tex);
     
