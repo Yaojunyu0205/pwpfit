@@ -55,7 +55,7 @@ classdef pwfitobject
     methods
         varargout = plot(obj, varargin);
         
-        tex = totex(obj, var, vfmt, lfmt, lcnv, order, efmt, mfmt, j);
+        tex = totex(obj, var, vfmt, lfmt, lcnv, order, efmt, mfmt, epsilon, j);
         
         varargout = tomatlab(obj, data_file, var, name);
         varargout = tolatex(obj, data_file, var, varargin);

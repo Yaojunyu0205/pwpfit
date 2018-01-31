@@ -100,7 +100,7 @@ else
         var = p.var;
     end
     
-    tex = totex(obj, var, [], [], [], [], {'.^'}, '.*', j);
+    tex = totex(obj, var, [], [], [], [], {'.^'}, '.*', NaN, j);
     fprintf(p.file, ' = @(%s) %s;\n', parameter(p.var), tex);
     
     if j < m

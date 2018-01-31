@@ -112,7 +112,7 @@ else
         var = p.var;
     end
     
-    tex = totex(obj, var, p.vfmt, p.lfmt, p.lcnv, [], {'^'}, ' ', j);
+    tex = totex(obj, var, p.vfmt, p.lfmt, p.lcnv, [], {'^'}, ' ', [], j);
     fprintf(p.file, '{%s}\n', tex);
     
     if j < m
