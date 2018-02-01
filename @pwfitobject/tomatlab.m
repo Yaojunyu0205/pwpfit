@@ -100,7 +100,8 @@ else
         var = p.var;
     end
     
-    tex = totex(obj, var, [], [], [], [], {'.^'}, '.*', j);
+    % print all coefficients (epsilon = NaN)
+    tex = totex(obj, var, [], [], [], [], {'.^'}, '.*', NaN, j);
     fprintf(p.file, ' = @(%s) %s;\n', parameter(p.var), tex);
     
     if j < m

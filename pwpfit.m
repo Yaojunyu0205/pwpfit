@@ -84,6 +84,12 @@ ka = length(xa);
 % k2 = #x2 = #y2
 kb = length(xb);
 
+% continuity constraint
+if ~exist('x0', 'var') || ~isnumeric(x0)
+    varargin = [{x0} varargin];
+    x0 = NaN;
+end
+
 % zero equality constraint
 if ~isempty(varargin) && isnumeric(varargin{1})
     y0 = varargin{1};
@@ -158,11 +164,10 @@ problem.options = optimoptions(problem.solver, 'Algorithm', 'active-set');
 % START measure time construction Aeq
 time.eq = cputime;
 
-if ~exist('x0', 'var') || isnan(x0)
+if isnan(x0)
     % no continuity constraint
     Aeq = [];
     beq = [];
-    x0 = NaN;
 elseif m == 1
     Aeq1 = double(p(x0)');
     Aeq = [Aeq1 -Aeq1];
@@ -232,6 +237,11 @@ for j = 1:kb
     Xj = num2cell(xb(j,:));
     problem.C(ka+j, r+(1:r)) = double(p(Xj{:})');
 end
+
+% remove NaN rows from C, d
+In = isnan(z);
+problem.C(In,:) = [];
+problem.d(In)   = [];
 
 % STOP measure time construction C, d
 time.obj = cputime - time.obj;

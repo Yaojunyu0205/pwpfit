@@ -1,4 +1,4 @@
-function tex = totex(obj, var, vfmt, lfmt, lcnv, order, efmt, mfmt, j)
+function tex = totex(obj, var, vfmt, lfmt, lcnv, order, efmt, mfmt, epsilon, j)
 %TOTEX Returns tex string representation of piece-wise fit.
 %
 %% Usage and description
@@ -106,6 +106,14 @@ else
     p.mfmt = mfmt;
 end
 
+% determine smallest coefficient to be printed
+if nargin < 9 || isempty(epsilon)
+%     p.eps = NaN; % print all coefficients
+    p.eps = 0;  % print non-zero coefficients
+else
+    p.eps = epsilon;
+end
+
 end
 
 tex = '';
@@ -137,7 +145,11 @@ function [tex, l] = printterm(tex, p, coeffs, l, i, x0)
     if ~exist('x0', 'var'), x0 = ''; end
 
     if ~iscell(p.var)
-        if coeffs(l) >= 0 && ~strcmp(tex, '')
+        if abs(coeffs(l)) <= p.eps
+            % don't print coefficient : nothing to do
+            l = l + 1;
+            return;
+        elseif coeffs(l) >= 0 && ~strcmp(tex, '')
             tex = sprintf('%s+ ', tex);
         elseif coeffs(l) < 0
             tex = sprintf('%s- ', tex);
