@@ -40,11 +40,13 @@ end
 for i=1:length(varargin)
     arg = varargin{i};
     if ~isfield(p, 'dict') && iscell(arg),          p.dict = arg;
-    elseif ~isfield(p, 'name') && ~isempty(arg),    p.name = arg;
+    elseif ~isfield(p, 'name') && ischar(arg),      p.name = arg;
+    elseif ~isfield(p, 'eps') && isnumber(arg),     p.eps  = arg;
     end
 end
 if ~isfield(p, 'name'), p.name = obj(1).name;   end
 if ~isfield(p, 'dict'), p.dict = {};            end
+if ~isfield(p, 'eps'),  p.eps  = 0;             end
 
 
 % open file for writing
@@ -112,7 +114,7 @@ else
         var = p.var;
     end
     
-    tex = totex(obj, var, p.vfmt, p.lfmt, p.lcnv, [], {'^'}, ' ', [], j);
+    tex = totex(obj, var, p.vfmt, p.lfmt, p.lcnv, [], {'^'}, ' ', p.eps, j);
     fprintf(p.file, '{%s}\n', tex);
     
     if j < m
