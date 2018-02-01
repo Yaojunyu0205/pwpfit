@@ -41,7 +41,7 @@ for i=1:length(varargin)
     arg = varargin{i};
     if ~isfield(p, 'dict') && iscell(arg),          p.dict = arg;
     elseif ~isfield(p, 'name') && ischar(arg),      p.name = arg;
-    elseif ~isfield(p, 'eps') && isnumber(arg),     p.eps  = arg;
+    elseif ~isfield(p, 'eps') && isnumeric(arg),     p.eps  = arg;
     end
 end
 if ~isfield(p, 'name'), p.name = obj(1).name;   end
