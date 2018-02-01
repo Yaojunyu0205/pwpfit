@@ -147,6 +147,7 @@ function [tex, l] = printterm(tex, p, coeffs, l, i, x0)
     if ~iscell(p.var)
         if abs(coeffs(l)) <= p.eps
             % don't print coefficient : nothing to do
+            l = l + 1;
             return;
         elseif coeffs(l) >= 0 && ~strcmp(tex, '')
             tex = sprintf('%s+ ', tex);
