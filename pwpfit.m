@@ -12,11 +12,11 @@ function [fitobject, x0, gof, time] = pwpfit (xa, xb, z, n, x0, varargin)
 %
 % minimizing
 %
-%   sum[i=1:ka] |fa(xa1(i),...,xam(i)) - z(i)|^2 
-%                        + sum[i=1:kb] |fb(xb1(i),...,xbm(i)) - z(ka+i)|^2,
+%   sum[i=1:ka] w(i)*|fa(xa1(i),...,xam(i)) - z(i)|^2 
+%                + sum[i=1:kb] w(ka+i)*|fb(xb1(i),...,xbm(i)) - z(ka+i)|^2,
 %
-% where ka, kb are the length of xa, xb, respectively, and ka+kb = k is the
-% length of z;
+% with weights w(1)...w(k); where ka, kb are the length of xa, xb, 
+% respectively, and ka+kb = k is the length of z;
 % subject to
 %
 %   fa(x0,...) == fb(x0,...)
@@ -26,11 +26,13 @@ function [fitobject, x0, gof, time] = pwpfit (xa, xb, z, n, x0, varargin)
 %% Usage and description
 %
 %   [fitobject, x0] = pwpfit(xa, xb, z, n)
-%   [...] = pwpfit(..., {x0 | NaN}, [y0 | NaN], [pwfoargs...])
+%   [...] = pwpfit(..., {x0 | NaN}, [y0 | NaN], [w | 1], [pwfoargs...])
 %   [..., gof] = pwpfit(...)
 %
 % Returns fit of xa, xb against z, where xa, xb, xy are column vectors with
-% size([xa; xb]) = size(y) and fa(x0,...) == fb(x0,...).
+% size([xa; xb]) = size(z) and fa(x0,...) == fb(x0,...).
+% Weights w must be a scalar (no weighting) or vector with 
+% size(w) == size(z).
 % If there is no x0 given or |x0 == NaN|, x0 is calculated based on the fit
 % of fa and fb.
 %
@@ -48,7 +50,7 @@ function [fitobject, x0, gof, time] = pwpfit (xa, xb, z, n, x0, varargin)
 % * |gof| is the goodness-of-fit structure with |gof.rmse| being the Root
 % Mean Squared Error:
 %
-%   rmse = sqrt(sum[i=1:k] |f(x(i)) - z(i)|^2).
+%   rmse = sqrt(sum[i=1:k] w(i)*|f(x(i)) - z(i)|^2).
 %
 % * |time| is structure of elapsed execution time where |time.all| is the
 % overall execution time; |time.lsq| is time to solve LSQ problem;
@@ -61,12 +63,9 @@ function [fitobject, x0, gof, time] = pwpfit (xa, xb, z, n, x0, varargin)
 % * Author:     Torbjoern Cunis
 % * Email:      <mailto:torbjoern.cunis@onera.fr>
 % * Created:    2017-02-22
-% * Changed:    2017-11-06
+% * Changed:    2018-03-11
 %
 %%
-
-assert(size(xa, 2) == size(xb, 2), 'xa and xb must have same number of columns.');
-assert(size([xa; xb],1) == size(z,1), '[xa; xb] and y must have same number of rows.');
 
 % START measure time full computation
 time.all = cputime;
@@ -98,7 +97,22 @@ else
     y0 = NaN;
 end
 
+% weights
+if ~isempty(varargin) && isnumeric(varargin{1})
+    w = varargin{1};
+    W = diag(w);
+    varargin(1) = [];
+else
+    W = 1;
+end
 
+% assert number of variables
+assert(size(xa, 2) == size(xb, 2), 'xa and xb must have same number of columns.');
+% assert number of data rows
+assert(size([xa; xb],1) == size(z,1), '[xa; xb] and z must have same number of rows.');
+
+% assert number of weight elements
+assert(isscalar(W) || length(W) == size(z,1), 'W and z must have same number of elements');
 
 %% Reduction to least-square optimization
 %
@@ -112,9 +126,16 @@ end
 %
 % the objective can be written as least-square problem in q = [q1 q2]^T:
 %
-%   find q minimizing || C*q - y ||^2,
+%   find q minimizing || W*(C*q - y) ||^2,
 %
-% where ||.|| is the L2-norm and
+% where ||.|| is the L2-norm,
+%
+%
+%       | w1 |  0 |
+%   W = |    \    |
+%       | 0  | wk |
+%
+% and
 %
 %       | Ca |    |
 %   C = |---------|
@@ -227,16 +248,19 @@ time.zero = cputime - time.zero;
 % START measure time construction C, d
 time.obj = cputime;
 
-problem.C = zeros(ka+kb, 2*r);
-problem.d = z;
+C = zeros(ka+kb, 2*r);
 for j = 1:ka
     Xj = num2cell(xa(j,:));
-    problem.C(j,1:r) = double(p(Xj{:})');
+    C(j,1:r) = double(p(Xj{:})');
 end
 for j = 1:kb
     Xj = num2cell(xb(j,:));
-    problem.C(ka+j, r+(1:r)) = double(p(Xj{:})');
+    C(ka+j, r+(1:r)) = double(p(Xj{:})');
 end
+% ||W*(Cq - d)|| = ||W*Cq - W*d||
+% for W positive diagonal
+problem.C = W*C;
+problem.d = diag(W).*z;
 
 % remove NaN rows from C, d
 In = isnan(z);
