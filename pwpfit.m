@@ -29,7 +29,7 @@ function [fitobject, x0, gof, time] = pwpfit (xa, xb, z, n, x0, varargin)
 %   [...] = pwpfit(..., {x0 | NaN}, [y0 | NaN], [w | 1], [pwfoargs...])
 %   [..., gof] = pwpfit(...)
 %
-% Returns fit of xa, xb against z, where xa, xb, xy are column vectors with
+% Returns fit of xa, xb against z, where xa, xb, z are column vectors with
 % size([xa; xb]) = size(z) and fa(x0,...) == fb(x0,...).
 % Weights w must be a scalar (no weighting) or vector with 
 % size(w) == size(z).
@@ -132,7 +132,7 @@ assert(isscalar(W) || length(W) == size(z,1), 'W and z must have same number of 
 %
 %
 %       | w1 |  0 |
-%   W = |    \    |
+%   W = |    \    |,
 %       | 0  | wk |
 %
 % and
