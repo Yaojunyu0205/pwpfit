@@ -1,4 +1,4 @@
-function [fitobject] = pfit (x, z, n, varargin)
+function [fitobject,gof,time] = pfit (x, z, n, varargin)
 %PFIT Fits multi-dimensional, polynomial function to data.
 %
 % Finds polynomial function in x1,...,xm of degrees n
@@ -36,9 +36,14 @@ function [fitobject] = pfit (x, z, n, varargin)
 % * Author:     Torbjoern Cunis
 % * Email:      <mailto:torbjoern.cunis@onera.fr>
 % * Created:    2017-02-23
-% * Changed:    2018-03-26
+% * Changed:    2018-10-10
 %
 %%
+
+time.type = 'pfit';
+
+% START measure time full computation
+time.all = cputime;
 
 % number of columns in data
 m = size(x, 2);
@@ -132,6 +137,9 @@ problem.options = optimoptions(problem.solver, 'Algorithm', 'active-set');
 %% Zero constraint
 % Aeq*q = 0
 
+% START measure time construction Azero
+time.zero = cputime;
+
 if isempty(y0) || all(isnan(y0))
     % no zero constraint
     Azero = [];
@@ -148,10 +156,16 @@ else
     bzero = zeros(r0,1);
 end
 
+% STOP measure time construction Azero
+time.zero = cputime - time.zero;
+
 
 %% least squares objective
 % find q minimizing the L2-norm
 % ||C*q-d||^2
+
+% START measure time construction C, d
+time.obj = cputime;
 
 C = zeros(k, r);
 for j = 1:k
@@ -168,6 +182,9 @@ In = isnan(z);
 problem.C(In,:) = [];
 problem.d(In)   = [];
 
+% STOP measure time construction C, d
+time.obj = cputime - time.obj;
+
 
 %% Linear least square problem
 % solve LSQ min||C*q - d|| for q
@@ -179,8 +196,13 @@ problem.Aeq = Azero;
 problem.beq = bzero;
 
 
-% solve LSQ for q
-q = lsqlin(problem);
+% START measure time solving LSQ
+time.lsq = cputime;
+
+[q, resnorm] = lsqlin(problem);
+
+% STOP measure time solving LSQ
+time.lsq = cputime - time.lsq;
 
 
 %% Return fitobject & GoF
@@ -191,5 +213,11 @@ f = symfun(F, X);
 
 fitobject = pwfitobject(['poly' sprintf('%g', n+zeros(1,m))], f, [], q, n, varargin{:});
 
+% RMSE is square root of residual norm
+gof.rmse = sqrt(resnorm);
+
+
+% STOP measure time full computation
+time.all = cputime - time.all;
 
 end

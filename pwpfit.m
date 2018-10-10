@@ -63,9 +63,11 @@ function [fitobject, x0, gof, time] = pwpfit (xa, xb, z, n, x0, varargin)
 % * Author:     Torbjoern Cunis
 % * Email:      <mailto:torbjoern.cunis@onera.fr>
 % * Created:    2017-02-22
-% * Changed:    2018-03-11
+% * Changed:    2018-10-10
 %
 %%
+
+time.type = 'pwpfit';
 
 % START measure time full computation
 time.all = cputime;
