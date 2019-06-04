@@ -155,7 +155,7 @@ end
 % problem structure
 problem.solver = 'lsqlin';
 % use active-set algorithm (depricated)
-problem.options = optimoptions(problem.solver, 'Algorithm', 'active-set');
+problem.options = optimoptions(problem.solver, 'Algorithm', 'interior-point');
 
 
 %% Continuity constraint
