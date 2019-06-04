@@ -131,7 +131,7 @@ assert(isscalar(W) || length(W) == size(z,1), 'W and z must have same number of 
 % problem structure
 problem.solver = 'lsqlin';
 % use active-set algorithm (depricated)
-problem.options = optimoptions(problem.solver, 'Algorithm', 'active-set');
+problem.options = optimoptions(problem.solver, 'Algorithm', 'interior-point');
 
 
 %% Zero constraint
