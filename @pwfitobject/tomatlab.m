@@ -54,7 +54,7 @@ else
 end
 
 fprintf(p.file, ...
-        '%% THIS FILE HAS BEEN WRITTEN BY pwfitobject/tomatlab.m %%\n\n');
+        '%% THIS FILE HAS BEEN WRITTEN BY pwfitobject#tomatlab.m %%\n\n');
     
     
 if ~isempty(obj(1).xi)

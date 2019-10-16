@@ -1,4 +1,4 @@
-function [fitobject] = pfit (x, z, n, varargin)
+function [fitobject,gof,time] = pfit (x, z, n, varargin)
 %PFIT Fits multi-dimensional, polynomial function to data.
 %
 % Finds polynomial function in x1,...,xm of degrees n
@@ -10,24 +10,40 @@ function [fitobject] = pfit (x, z, n, varargin)
 %   sum[j=1:k] |f(x1(j),...,xm(j)) - z(j)|^2,
 %
 % where k is the length of x and z.
-% If the zero constraint is set, the solution f fulfills
-%
-%   f(x1,Y0) = 0
-%
-% for all x1.
 %
 %% Usage and description
 %
-%   fitobject = pwpfit([x1,...,xm], z, [n1,...,nm], zero)
+%   fitobject = pfit(x, z, n)
+%   [...] = pfit(..., [y0 | NaN], [w | 1], [pwfoargs...])
+%
+% Returns fit of x against z, where x and z are column vectors with
+% size(x) = size(z).
+% Weights w must be a scalar (no weighting) or vector with 
+% size(w) == size(z).
+%
+% If the optional parameter y0 (and |y0 != NaN|) is given, the returned fit
+% is zero in the parameter xj if and only if the j-th component of y0 is
+% zero; i.e.
+%
+%   f(...,xj=0,...) = 0
+%
+% for all x1,...,x[j-1],x[j+1],...,xm in R^(m-1).
+%
+% The optional argument(s) |pwfoargs| are applied to |fitobject|.
 %
 %% About
 %
 % * Author:     Torbjoern Cunis
 % * Email:      <mailto:torbjoern.cunis@onera.fr>
 % * Created:    2017-02-23
-% * Changed:    2017-02-23
+% * Changed:    2018-10-10
 %
 %%
+
+time.type = 'pfit';
+
+% START measure time full computation
+time.all = cputime;
 
 % number of columns in data
 m = size(x, 2);
@@ -48,6 +64,20 @@ else
     y0 = NaN;
 end
 
+% weights
+if ~isempty(varargin) && isnumeric(varargin{1})
+    w = varargin{1};
+    W = diag(w);
+    varargin(1) = [];
+else
+    W = 1;
+end
+
+% assert number of data rows
+assert(size(x,1) == size(z,1), 'x and z must have same number of rows.');
+
+% assert number of weight elements
+assert(isscalar(W) || length(W) == size(z,1), 'W and z must have same number of elements');
 
 %% Reduction to least-square optimization
 %
@@ -58,9 +88,16 @@ end
 % with q = [q0 q10 ... q01 ... qn0 ... q0n]^T, the objective can be written
 % as least-square problem in q:
 %
-%   find q minimizing || C*q - z ||^2,
+%   find q minimizing || W*C*q - z ||^2,
 %
-% where ||.|| is the L2-norm and
+% where ||.|| is the L2-norm,
+%
+%
+%       | w1 |  0 |
+%   W = |    \    |,
+%       | 0  | wk |
+%
+% and
 %
 %       | 1 x1,1 ... xm,1 ... x1,1^n ... xm,1^n  |
 %   C = | :   :   \    :   \    :     \    :     |.
@@ -91,64 +128,84 @@ end
 %        |----------------------------------------------------|
 %
 
+% problem structure
+problem.solver = 'lsqlin';
+% use active-set algorithm (depricated)
+problem.options = optimoptions(problem.solver, 'Algorithm', 'interior-point');
 
-% zero constraint
+
+%% Zero constraint
 % Aeq*q = 0
+
+% START measure time construction Azero
+time.zero = cputime;
+
 if isempty(y0) || all(isnan(y0))
     % no zero constraint
     Azero = [];
     bzero = [];
-elseif m == 1
-    Azero = double(p(y0)');
-    bzero = 0;
-elseif m == 2
-    Azero = zeros(n+1,r);
-    j = 0;
-    for N=0:n
-        [pN, ~, rN] = monomials(N, 1);
-        pNy0 = double(pN(y0)');
-        Azero(1:rN,j+(1:rN)) = cdiag(pNy0(rN:-1:1));
-        j = j + rN;
-    end
-    bzero = zeros(n+1,1);
-elseif m > 2
-    Azero = zeros(n+1,r);
-    Y0 = num2cell(y0);
-    j = 0;
-    for N=0:n
-        for i=0:N
-            % get monomials vector in x2,...,xm of degree i
-            [pNi, ~, rNi] = monomials({i}, m-1);
-            pNiy0 = double(pNi(Y0{:}));
-            Azero(1+N-i,j+(1:rNi)) = pNiy0';
-            j = j + rNi;
-        end
-    end
-    bzero = zeros(n+1,1);
 else
-    error('Zero constraint for more than 2 variables is not supported yet.');
+    Azero = eye(r);
+    if length(y0) < m
+        y0 = [ones(1,m-length(y0)) y0];
+    end
+    Y = num2cell(y0);
+    pY = double(p(Y{:}));
+    Azero(pY==0,:) = [];
+    r0 = size(Azero,1);
+    bzero = zeros(r0,1);
 end
 
+% STOP measure time construction Azero
+time.zero = cputime - time.zero;
 
-% least squares objective
+
+%% least squares objective
 % find q minimizing the L2-norm
 % ||C*q-d||^2
+
+% START measure time construction C, d
+time.obj = cputime;
+
 C = zeros(k, r);
-d = z;
 for j = 1:k
     Xj = num2cell(x(j,:));
     C(j,:) = double(p(Xj{:})');
 end
+% ||W*(Cq - d)|| = ||W*Cq - W*d||
+% for W positive diagonal
+problem.C = W*C;
+problem.d = diag(W).*z;
+
+% remove NaN rows from C, d
+In = isnan(z);
+problem.C(In,:) = [];
+problem.d(In)   = [];
+
+% STOP measure time construction C, d
+time.obj = cputime - time.obj;
 
 
-% inequality condition
-% A*q <= b
-A = ones(1,r);
-b = 1e4;
+%% Linear least square problem
+% solve LSQ min||C*q - d|| for q
+% where Aineq*q <= bineq
+problem.Aineq = ones(1,r);
+problem.bineq = 1e4;
+% and Aeq*q == beq
+problem.Aeq = Azero;
+problem.beq = bzero;
 
-% solve LSQ for q
-q = lsqlin(C, d, A, b, Azero, bzero);
 
+% START measure time solving LSQ
+time.lsq = cputime;
+
+[q, resnorm] = lsqlin(problem);
+
+% STOP measure time solving LSQ
+time.lsq = cputime - time.lsq;
+
+
+%% Return fitobject & GoF
 % function
 P = formula(p);
 F = q'*P;
@@ -156,5 +213,11 @@ f = symfun(F, X);
 
 fitobject = pwfitobject(['poly' sprintf('%g', n+zeros(1,m))], f, [], q, n, varargin{:});
 
+% RMSE is square root of residual norm
+gof.rmse = sqrt(resnorm);
+
+
+% STOP measure time full computation
+time.all = cputime - time.all;
 
 end

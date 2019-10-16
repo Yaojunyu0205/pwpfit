@@ -34,13 +34,13 @@ switch(nargin)
         %% 1-Dimension
         varargout{1} = varargin{1};
         
-    case 2
-        %% 2-Dimension: curve fitting
-        varargout{:} = prepareCurveData(varargin{:});
-        
-    case 3
-        %% 3-Dimension: surface fitting
-        [varargout{:}] = prepareSurfaceData(varargin{:});
+%     case 2
+%         %% 2-Dimension: curve fitting
+%         varargout{:} = prepareCurveData(varargin{:});
+%         
+%     case 3
+%         %% 3-Dimension: surface fitting
+%         [varargout{:}] = prepareSurfaceData(varargin{:});
         
 %     case 4
     otherwise
