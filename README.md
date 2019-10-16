@@ -4,4 +4,4 @@ The `pwpfit` toolbox is published open-source in the hope that it will be useful
 
 ## References
 
-> Torbjørn Cunis. The `pwpfit` toolbox for polynomial and piece-wise data fitting. In *18th IFAC Symposium on System Identification (SYSID 2018).* Stockholm, Sweden, 2018.
+> Torbjørn Cunis. The `pwpfit` toolbox for polynomial and piece-wise data fitting. In *18th IFAC Symposium on System Identification (SYSID 2018).* Stockholm, Sweden, 2018. [doi:j.ifacol.2018.09.204](https://doi.org/j.ifacol.2018.09.204)
